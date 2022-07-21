@@ -131,11 +131,6 @@ public class DefaultRequestHandler extends SimpleChannelInboundHandler<DevicePro
                 ctx,
                 connectRequest.getId(),
                 client.getHolder());
-//        SocketTransport transport = new SocketTransport(connectRequest.getDst(),
-//                connectRequest.getPort(),
-//                ctx,
-//                connectRequest.getId(),
-//                client.getHolder());
         transport.transport();
     }
 

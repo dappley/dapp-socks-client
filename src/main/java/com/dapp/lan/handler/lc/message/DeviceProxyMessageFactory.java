@@ -2,7 +2,9 @@ package com.dapp.lan.handler.lc.message;
 
 import com.dapp.lan.handler.lc.MessageCode;
 import com.dapp.lan.handler.lc.common.ProxyDataMessage;
+import com.dapp.lan.protobuf.DeviceProxyMessageProto;
 import com.google.gson.Gson;
+import com.google.protobuf.ByteString;
 import io.netty.buffer.ByteBuf;
 
 import java.nio.charset.StandardCharsets;
@@ -78,4 +80,46 @@ public class DeviceProxyMessageFactory {
         return ProxyDataMessage.builder().id(msgId).data(rawData).build();
     }
 
+    /**
+     * @description: TODO
+     * @author Sun
+     * @date 2022/3/21 15:39
+     * @version 1.0
+     */
+
+
+
+    public static ProxyDataMessage decodeProxyDataByteMessage(byte[] data) {
+        int idLength = ((data[0] & 0xFF) << 24) +
+                ((data[1] & 0xFF) << 16) +
+                ((data[2] & 0xFF) << 8) + (data[3] & 0xFF);
+
+        String msgId = new String(data, 4, idLength, StandardCharsets.UTF_8);
+        byte[] rawData = new byte[data.length - 4 - idLength];
+        System.arraycopy(data, 4 + idLength, rawData, 0, rawData.length);
+
+        return ProxyDataMessage.builder().id(msgId).data(rawData).build();
+    }
+
+    public static DeviceProxyMessageProto.DeviceProxyMessage encodeDeviceProxyMessageProto(String id, ByteBuf dataBuf, int length) {
+        DeviceProxyMessageProto.DeviceProxyMessage.Builder builder = DeviceProxyMessageProto.DeviceProxyMessage.newBuilder();
+        byte[] idBytes = id.getBytes(StandardCharsets.UTF_8);
+        int newLength = 4 + idBytes.length + length;
+        byte[] data = new byte[newLength];
+
+        data[0] = (byte)((idBytes.length >> 24) & 0xFF);
+        data[1] = (byte)((idBytes.length >> 16) & 0xFF);
+        data[2] = (byte)((idBytes.length >> 8) & 0xFF);
+        data[3] = (byte)(idBytes.length & 0xFF);
+
+        System.arraycopy(idBytes, 0, data, 4, idBytes.length);
+        dataBuf.readBytes(data, 4 + idBytes.length, length);
+
+        builder.setCode(MessageCode.PROXY_DATA.value());
+        builder.setTag(0);
+        builder.setData(ByteString.copyFrom(data));
+        builder.setId(id);
+
+        return builder.build();
+    }
 }

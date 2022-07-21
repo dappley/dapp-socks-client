@@ -3,9 +3,8 @@ package com.dapp.lan.server;
 import com.dapp.lan.config.PersistentConnectionConfiguration;
 import com.dapp.lan.config.TransportContextHolder;
 import com.dapp.lan.handler.lc.ConnectionListener;
-import com.dapp.lan.handler.lc.DefaultRequestHandler;
-import com.dapp.lan.handler.lc.decoder.ClientMessageDecoder;
-import com.dapp.lan.handler.lc.encoder.ClientMessageEncoder;
+import com.dapp.lan.handler.lc.DefaultProtoRequestHandler;
+import com.dapp.lan.protobuf.DeviceProxyMessageProto;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
@@ -14,6 +13,10 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.codec.protobuf.ProtobufDecoder;
+import io.netty.handler.codec.protobuf.ProtobufEncoder;
+import io.netty.handler.codec.protobuf.ProtobufVarint32FrameDecoder;
+import io.netty.handler.codec.protobuf.ProtobufVarint32LengthFieldPrepender;
 import io.netty.handler.timeout.IdleStateHandler;
 import lombok.extern.slf4j.Slf4j;
 
@@ -51,10 +54,18 @@ public class PersistentConnectionClient {
                         @Override
                         protected void initChannel(SocketChannel ch) {
                             //Socks5Message ByteBuf
-                            ch.pipeline().addLast(new IdleStateHandler(0, 4, 0, TimeUnit.SECONDS))
-                                    .addLast(new ClientMessageDecoder())
-                                    .addLast(new ClientMessageEncoder())
-                                    .addLast(new DefaultRequestHandler(PersistentConnectionClient.this));
+                            ch.pipeline()
+//                                    .addLast(new IdleStateHandler(0, 4, 0, TimeUnit.SECONDS))
+                                    .addLast(new IdleStateHandler(0, 0, 0, TimeUnit.SECONDS))
+//                                    .addLast(new ClientMessageDecoder())
+//                                    .addLast(new ClientMessageEncoder())
+//                                    .addLast(new DefaultRequestHandler(PersistentConnectionClient.this));
+
+                                    .addLast(new ProtobufVarint32FrameDecoder())
+                                    .addLast(new ProtobufDecoder(DeviceProxyMessageProto.DeviceProxyMessage.getDefaultInstance()))
+                                    .addLast(new ProtobufVarint32LengthFieldPrepender())
+                                    .addLast(new ProtobufEncoder())
+                                    .addLast(new DefaultProtoRequestHandler(PersistentConnectionClient.this));
                         }
                     });
 
